@@ -1,0 +1,9 @@
+{
+  "name": "zhdun-dolphin-rain",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/rain-physics.test.mjs",
+    "prepare-assets": "node tools/prepare-rain-assets.mjs"
+  }
+}

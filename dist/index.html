@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f1f0eb">
-  <meta name="description" content="Побудь здесь. Рассмотри Ждуна со всех сторон — интерактивная 3D-скульптура и немного спокойствия.">
+  <meta name="description" content="Ждун и дождь из дельфинов: объёмная сцена с физикой падения, вращением и столкновениями. Даже в такую погоду спешить некуда.">
   <title>Ждун — искусство подождать</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -23,6 +23,7 @@
     <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M16 5v14"/></symbol>
     <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m5 3 3 16 4-5 6 2Z"/></symbol>
+    <symbol id="i-rain" viewBox="0 0 24 24"><path d="M6 14a4 4 0 1 1 1.2-7.8A5.5 5.5 0 0 1 18 8a3 3 0 0 1 0 6H6ZM8 17l-1 3m6-3-1 3m6-3-1 3"/></symbol>
   </svg>
 
   <header class="header">
@@ -44,11 +45,16 @@
       <div class="viewer-top"><span class="viewer-caption"><span class="tiny-cross">+</span> ОБЪЕКТ ДЛЯ СОЗЕРЦАНИЯ</span><button class="icon-button fullscreen" id="fullscreen" aria-label="Открыть модель на весь экран" title="На весь экран"><svg class="icon"><use href="#i-expand"/></svg></button></div>
       <div class="stage" id="stage">
         <div class="stage-word" aria-hidden="true">ждун</div>
-        <canvas id="canvas" tabindex="0" role="img" aria-label="Объёмный Ждун. Перетаскивайте для вращения; колесо мыши или жест двумя пальцами — приближение." aria-describedby="keyboard-help"></canvas>
+        <canvas id="canvas" tabindex="0" role="img" aria-label="Ждун под дождём из объёмных дельфинов. Перетаскивайте для вращения; колесо мыши или жест двумя пальцами — приближение." aria-describedby="keyboard-help"></canvas>
         <div class="loading" id="loading" role="status" aria-live="polite"><span class="loading-ring"></span><strong id="loading-title">Ждун скоро будет здесь</strong><span id="loading-note">Даже ему нужно немного времени</span><div class="progress-track"><div id="progress-bar"></div></div></div>
         <div class="error-state" id="error-state" hidden><strong>Немного не дождались</strong><p id="error-message">Не удалось загрузить модель. Попробуйте ещё раз.</p><button class="explore-button" id="retry">Попробовать снова <svg class="icon"><use href="#i-reset"/></svg></button></div>
         <div class="drag-hint" id="drag-hint"><svg class="icon"><use href="#i-pointer"/></svg><span>Потяни, чтобы повернуть</span></div>
         <div class="view-tabs" aria-label="Ракурс модели"><button data-view="front" class="active" aria-pressed="true">Спереди</button><button data-view="side" aria-pressed="false">Сбоку</button><button data-view="back" aria-pressed="false">Сзади</button></div>
+      </div>
+
+      <div class="rain-controls" id="rain-controls" data-phase="loading" role="group" aria-label="Дождь из дельфинов">
+        <div class="rain-weather"><svg class="icon"><use href="#i-rain"/></svg><div><span class="rain-caption">ОСАДКИ: ДЕЛЬФИНЫ</span><span id="rain-status" role="status" aria-live="polite">Готовим дельфинов…</span></div></div>
+        <div class="rain-actions"><label class="rain-intensity-label" for="rain-intensity"><span>Сила дождя</span><input id="rain-intensity" type="range" min="1" max="3" step="1" value="2" aria-label="Сила дождя" aria-valuetext="Обычный дождь" disabled></label><button id="rain-toggle" data-rain-control aria-label="Остановить дождь из дельфинов" aria-pressed="true" disabled><svg class="icon"><use href="#i-rain"/></svg><span id="rain-toggle-label">Остановить</span></button></div>
       </div>
 
       <div class="viewer-bottom">
@@ -62,7 +68,7 @@
   </main>
 
   <footer class="footer"><span>ПРОСТО ПОБУДЬ ЗДЕСЬ.</span><span class="footer-center"><span class="footer-line"></span> НИЧЕГО НЕ ДЕЛАТЬ — ТОЖЕ ЗАНЯТИЕ</span><span class="footer-right">СОЗДАНО БЕЗ СПЕШКИ <span>↗</span></span></footer>
-  <dialog id="about" aria-labelledby="about-title"><button class="dialog-close icon-button" id="about-close" aria-label="Закрыть">×</button><div class="eyebrow">МИНУТКА СПОКОЙСТВИЯ</div><h2 id="about-title">Ждун просто ждёт.<br>А ты можешь<br>осмотреться.</h2><p>Это объёмная модель: у неё есть спина, руки и множество складок. Повращай её, найди любимый ракурс или включи медленное вращение.</p><dl><div><dt>Повернуть</dt><dd>Перетаскивай мышью или пальцем</dd></div><div><dt>Приблизить</dt><dd>Колесо мыши или жест двумя пальцами</dd></div><div><dt>Начать сначала</dt><dd>Кнопка ↶ под моделью</dd></div></dl><p class="dialog-footnote">Здесь нет таймера. Можно остаться сколько угодно.</p></dialog>
+  <dialog id="about" aria-labelledby="about-title"><button class="dialog-close icon-button" id="about-close" aria-label="Закрыть">×</button><div class="eyebrow">МИНУТКА СПОКОЙСТВИЯ</div><h2 id="about-title">Ждун просто ждёт.<br>Даже под дождём<br>из дельфинов.</h2><p>Дельфины падают под действием гравитации, кувыркаются, сталкиваются друг с другом и отскакивают от Ждуна. После приземления они исчезают. Силу дождя можно менять или совсем его остановить.</p><dl><div><dt>Повернуть</dt><dd>Перетаскивай мышью или пальцем</dd></div><div><dt>Приблизить</dt><dd>Колесо мыши или жест двумя пальцами</dd></div><div><dt>Начать сначала</dt><dd>Кнопка ↶ под моделью</dd></div></dl><p class="dialog-footnote">Погода меняется. Ждун — нет.</p></dialog>
   <noscript><div class="noscript">Для вращения Ждуна включите JavaScript в настройках браузера.</div></noscript>
   <script type="module" src="./app.js"></script>
 </body>

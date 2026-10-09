@@ -9,7 +9,7 @@ const viewer = $('viewer');
 const stage = $('stage');
 const canvas = $('canvas');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const interactionButtons = [...viewer.querySelectorAll('button'), $('explore')];
+const interactionButtons = [...viewer.querySelectorAll('button:not([data-rain-control])'), $('explore')];
 const target = new THREE.Vector3(0, 1.58, 0);
 const modelHeight = 3.4;
 let renderer, scene, camera, controls, model, keyLight, environmentTarget;
@@ -20,6 +20,8 @@ let ready = false;
 let generation = 0;
 let homeDistance = 9.5;
 let expanded = false;
+let rain = null;
+let rainLoading = false;
 
 interactionButtons.forEach((button) => { button.disabled = true; });
 
@@ -31,7 +33,7 @@ function invalidate() {
 function render(time) {
   frame = null;
   if (document.hidden) return;
-  const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
+  const delta = Math.min((time - lastTime) / 1000 || 0, 0.1);
   lastTime = time;
   if (transition) {
     const fraction = Math.min((time - transition.start) / transition.duration, 1);
@@ -41,8 +43,44 @@ function render(time) {
     if (fraction === 1) transition = null;
   }
   const changed = controls.update(delta);
+  if (rain?.animating) rain.update(delta);
   renderer.render(scene, camera);
-  if (controls.autoRotate || transition || changed) invalidate();
+  if (controls.autoRotate || transition || changed || rain?.animating) invalidate();
+}
+
+function updateRainControls(phase) {
+  const enabled = phase === 'raining';
+  $('rain-toggle').setAttribute('aria-pressed', String(enabled));
+  $('rain-toggle').setAttribute('aria-label', enabled ? 'Остановить дождь из дельфинов' : 'Включить дождь из дельфинов');
+  $('rain-toggle-label').textContent = enabled ? 'Остановить' : 'Включить';
+  $('rain-status').textContent = { raining: 'Идёт дождь', clearing: 'Дождь стихает', clear: 'Без осадков' }[phase];
+  $('rain-controls').dataset.phase = phase;
+}
+
+async function loadRain(attempt = generation) {
+  if (rainLoading) return;
+  rainLoading = true;
+  $('rain-toggle').disabled = true;
+  $('rain-intensity').disabled = true;
+  $('rain-status').textContent = 'Готовим дельфинов…';
+  try {
+    const { DolphinRain } = await import('./dolphin-rain.js');
+    const prepared = await DolphinRain.create({ scene, statue: model, enabled: true, onChange: updateRainControls });
+    if (attempt !== generation) { prepared.dispose(); return; }
+    rain = prepared;
+    rain.setIntensity(Number($('rain-intensity').value));
+    $('rain-toggle').disabled = false;
+    $('rain-intensity').disabled = false;
+    announce('Дельфины готовы. Они падают, вращаются и отскакивают от Ждуна и пола.');
+    invalidate();
+  } catch (error) {
+    if (attempt !== generation) return;
+    console.error('Unable to initialize dolphin rain:', error);
+    $('rain-status').textContent = 'Дождь не загрузился';
+    $('rain-toggle-label').textContent = 'Повторить';
+    $('rain-toggle').setAttribute('aria-label', 'Повторить загрузку дождя');
+    $('rain-toggle').disabled = false;
+  } finally { rainLoading = false; }
 }
 
 function resize() {
@@ -55,7 +93,7 @@ function resize() {
   // Leave breathing room above the head and below the feet at every aspect ratio.
   const fitHeightDistance = modelHeight * 1.35 / (2 * Math.tan(verticalFov / 2));
   const fitWidthDistance = 2.48 * 1.35 / (2 * Math.tan(verticalFov / 2) * camera.aspect);
-  homeDistance = Math.max(fitHeightDistance, fitWidthDistance);
+  homeDistance = Math.max(fitHeightDistance, fitWidthDistance) * 1.18;
   if (ready && oldDistance) {
     const offset = camera.position.clone().sub(controls.target);
     offset.multiplyScalar(homeDistance / oldDistance);
@@ -102,7 +140,7 @@ function setView(view, immediate = false) {
   setAutoRotate(false);
   const angles = { front: 0.11, side: Math.PI / 2, back: Math.PI + 0.11 };
   const angle = angles[view] ?? angles.front;
-  const elevation = 0.105;
+  const elevation = 0.16;
   const position = new THREE.Vector3(
     Math.sin(angle) * Math.cos(elevation) * homeDistance,
     target.y + Math.sin(elevation) * homeDistance,
@@ -165,6 +203,9 @@ function contactShadow() {
 
 function showError(error) {
   ready = false;
+  if (rain) { rain.dispose(); rain = null; }
+  $('rain-toggle').disabled = true;
+  $('rain-intensity').disabled = true;
   console.error('Unable to display the GLB model:', error);
   $('loading').hidden = true;
   $('loading').style.display = 'none';
@@ -181,6 +222,9 @@ function showError(error) {
 
 async function loadModel() {
   const attempt = ++generation;
+  if (rain) { rain.dispose(); rain = null; }
+  $('rain-toggle').disabled = true;
+  $('rain-intensity').disabled = true;
   $('error-state').hidden = true;
   $('loading').hidden = false;
   $('loading').style.display = 'flex';
@@ -234,6 +278,7 @@ async function loadModel() {
     $('loading').setAttribute('aria-hidden', 'true');
     announce('Ждун загрузился. Можно вращать и приближать модель.');
     invalidate();
+    loadRain(attempt);
   } catch (error) {
     if (attempt === generation) showError(error);
   }
@@ -316,6 +361,17 @@ document.querySelectorAll('[data-view]').forEach((button) => button.addEventList
 }));
 $('light').addEventListener('click', () => setTheme(false));
 $('dark').addEventListener('click', () => setTheme(true));
+$('rain-toggle').addEventListener('click', () => {
+  if (!rain) { loadRain(); return; }
+  rain.setEnabled(!rain.enabled);
+  announce(rain.enabled ? 'Дождь из дельфинов включён.' : 'Новые дельфины больше не появляются. Оставшиеся упадут и исчезнут.');
+  invalidate();
+});
+$('rain-intensity').addEventListener('input', () => {
+  rain?.setIntensity(Number($('rain-intensity').value));
+  $('rain-intensity').setAttribute('aria-valuetext', ['Небольшой дождь', 'Обычный дождь', 'Ливень'][Number($('rain-intensity').value) - 1]);
+  invalidate();
+});
 $('explore').addEventListener('click', () => {
   viewer.classList.add('interacted');
   viewer.scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'center' });
@@ -373,5 +429,8 @@ canvas.addEventListener('keydown', (event) => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastTime = performance.now(); invalidate(); } });
 canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); showError(new Error('WebGL context lost')); });
 canvas.addEventListener('webglcontextrestored', () => location.reload());
-reducedMotion.addEventListener('change', () => { if (reducedMotion.matches && controls) setAutoRotate(false); });
+reducedMotion.addEventListener('change', () => {
+  if (reducedMotion.matches && controls) setAutoRotate(false);
+  if (reducedMotion.matches && rain) { rain.setEnabled(false); invalidate(); }
+});
 init();
