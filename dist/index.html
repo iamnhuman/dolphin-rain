@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f1f0eb">
+  <meta name="description" content="Побудь здесь. Рассмотри Ждуна со всех сторон — интерактивная 3D-скульптура и немного спокойствия.">
+  <title>Ждун — искусство подождать</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-orbit" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="4.8" transform="rotate(-32 12 12)"/><path d="m17 3 2 2-2 2"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 .7 7M4 4v5h5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13a8.5 8.5 0 0 1-9.5-9.5A8.5 8.5 0 1 0 20.5 13Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 19 19 5M5 5h14v14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M16 5v14"/></symbol>
+    <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m5 3 3 16 4-5 6 2Z"/></symbol>
+  </svg>
+
+  <header class="header">
+    <a class="brand" href="./" aria-label="Ждун — главная"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>ждун<span class="brand-dot">.</span></a>
+    <div class="header-note"><span>МАЛЕНЬКИЙ МУЗЕЙ</span><span>БОЛЬШОГО СПОКОЙСТВИЯ</span></div>
+    <button class="about-button" id="about-open">Что здесь происходит <span class="question">?</span></button>
+  </header>
+
+  <main class="exhibition">
+    <section class="intro" aria-labelledby="title">
+      <div class="eyebrow"><span class="live-dot"></span> СПЕШИТЬ НЕКУДА</div>
+      <h1 id="title">Искусство<br> подождать<span>.</span></h1>
+      <p class="intro-copy">Он никуда не торопится.<br>И тебе необязательно.</p>
+      <button class="explore-button" id="explore">Рассмотреть поближе <svg class="icon"><use href="#i-arrow"/></svg></button>
+      <div class="object-label"><span class="object-index">01<span> / </span>01</span><div><strong>Ждун</strong><span>Воплощённое спокойствие</span></div></div>
+    </section>
+
+    <section class="viewer" id="viewer" aria-label="Интерактивная 3D-модель Ждуна">
+      <div class="viewer-top"><span class="viewer-caption"><span class="tiny-cross">+</span> ОБЪЕКТ ДЛЯ СОЗЕРЦАНИЯ</span><button class="icon-button fullscreen" id="fullscreen" aria-label="Открыть модель на весь экран" title="На весь экран"><svg class="icon"><use href="#i-expand"/></svg></button></div>
+      <div class="stage" id="stage">
+        <div class="stage-word" aria-hidden="true">ждун</div>
+        <canvas id="canvas" tabindex="0" role="img" aria-label="Объёмный Ждун. Перетаскивайте для вращения; колесо мыши или жест двумя пальцами — приближение." aria-describedby="keyboard-help"></canvas>
+        <div class="loading" id="loading" role="status" aria-live="polite"><span class="loading-ring"></span><strong id="loading-title">Ждун скоро будет здесь</strong><span id="loading-note">Даже ему нужно немного времени</span><div class="progress-track"><div id="progress-bar"></div></div></div>
+        <div class="error-state" id="error-state" hidden><strong>Немного не дождались</strong><p id="error-message">Не удалось загрузить модель. Попробуйте ещё раз.</p><button class="explore-button" id="retry">Попробовать снова <svg class="icon"><use href="#i-reset"/></svg></button></div>
+        <div class="drag-hint" id="drag-hint"><svg class="icon"><use href="#i-pointer"/></svg><span>Потяни, чтобы повернуть</span></div>
+        <div class="view-tabs" aria-label="Ракурс модели"><button data-view="front" class="active" aria-pressed="true">Спереди</button><button data-view="side" aria-pressed="false">Сбоку</button><button data-view="back" aria-pressed="false">Сзади</button></div>
+      </div>
+
+      <div class="viewer-bottom">
+        <div class="lighting" role="group" aria-label="Освещение"><button id="light" class="active" aria-label="Светлая студия" aria-pressed="true" title="Светлая студия"><svg class="icon"><use href="#i-sun"/></svg></button><button id="dark" aria-label="Тёмная студия" aria-pressed="false" title="Тёмная студия"><svg class="icon"><use href="#i-moon"/></svg></button></div>
+        <div class="toolbar" role="group" aria-label="Управление моделью"><button class="rotate-button" id="rotate" aria-label="Включить медленное вращение" aria-pressed="false"><svg class="icon"><use id="rotate-icon" href="#i-play"/></svg><span>Вращать</span></button><span class="toolbar-divider"></span><button class="icon-button" id="zoom-out" aria-label="Отдалить" title="Отдалить"><svg class="icon"><use href="#i-minus"/></svg></button><button class="icon-button" id="zoom-in" aria-label="Приблизить" title="Приблизить"><svg class="icon"><use href="#i-plus"/></svg></button><span class="toolbar-divider"></span><button class="icon-button" id="reset" aria-label="Вернуть исходный ракурс" title="Исходный ракурс"><svg class="icon"><use href="#i-reset"/></svg></button></div>
+        <span class="degree-mark" aria-hidden="true">360°<svg class="icon"><use href="#i-orbit"/></svg></span>
+      </div>
+      <span id="keyboard-help" class="sr-only">Когда модель в фокусе: стрелки меняют ракурс, плюс и минус меняют приближение, R возвращает исходный ракурс, пробел включает вращение.</span>
+      <p class="sr-only" id="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer class="footer"><span>ПРОСТО ПОБУДЬ ЗДЕСЬ.</span><span class="footer-center"><span class="footer-line"></span> НИЧЕГО НЕ ДЕЛАТЬ — ТОЖЕ ЗАНЯТИЕ</span><span class="footer-right">СОЗДАНО БЕЗ СПЕШКИ <span>↗</span></span></footer>
+  <dialog id="about" aria-labelledby="about-title"><button class="dialog-close icon-button" id="about-close" aria-label="Закрыть">×</button><div class="eyebrow">МИНУТКА СПОКОЙСТВИЯ</div><h2 id="about-title">Ждун просто ждёт.<br>А ты можешь<br>осмотреться.</h2><p>Это объёмная модель: у неё есть спина, руки и множество складок. Повращай её, найди любимый ракурс или включи медленное вращение.</p><dl><div><dt>Повернуть</dt><dd>Перетаскивай мышью или пальцем</dd></div><div><dt>Приблизить</dt><dd>Колесо мыши или жест двумя пальцами</dd></div><div><dt>Начать сначала</dt><dd>Кнопка ↶ под моделью</dd></div></dl><p class="dialog-footnote">Здесь нет таймера. Можно остаться сколько угодно.</p></dialog>
+  <noscript><div class="noscript">Для вращения Ждуна включите JavaScript в настройках браузера.</div></noscript>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
